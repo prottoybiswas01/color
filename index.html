@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: The application uses a side-navigation layout. Users can select a color from the left sidebar, and the main content area dynamically updates to show detailed information about that color. This includes its positive aspects, negative aspects, and common uses. Below this, a comparative radar chart visualizes the psychological impact of all colors simultaneously, highlighting the currently selected one. This structure was chosen to allow users to focus on one color at a time while still providing a quick, visual comparison across all colors, enhancing comprehension and making exploration intuitive rather than a simple linear scroll. -->
-    <!-- Visualization & Content Choices: Report Info: The source provides qualitative descriptions of six colors, including their uses and psychological associations (positive/negative). Goal: To inform and compare these attributes interactively. Viz/Presentation Method: The primary information is presented in a three-part text block (positive, negative, uses) for clarity. For comparison, a radar chart is used. This chart maps the qualitative attributes to a numerical scale (1-10) across five dimensions: শক্তি (Energy), শান্তি (Peace), বিশ্বাস (Trust), আনন্দ (Joy), and বিপদ (Danger). Interaction: Clicking a color in the navigation updates the text content and highlights that color's data series on the radar chart. Justification: This combined approach presents detailed information clearly while the radar chart offers a powerful "at-a-glance" comparison of the colors' emotional profiles, which is more engaging than text alone. Library/Method: Chart.js (Canvas) is used for the chart. All icons and layouts are built with Tailwind CSS and HTML. -->
+    <!-- Application Structure Plan: The application uses a side-navigation layout. Users can select a color from the left sidebar, and the main content area dynamically updates to show detailed information about that color. This includes its positive aspects, negative aspects, and common uses. Below this, a comparative radar chart visualizes the psychological impact of all colors simultaneously, highlighting the currently selected one. A new interactive color mixer powered by a generative model has been added at the top for dynamic color analysis. This structure was chosen to allow users to focus on one color at a time while still providing a quick, visual comparison across all colors, enhancing comprehension and making exploration intuitive rather than a simple linear scroll. -->
+    <!-- Visualization & Content Choices: Report Info: The source provides qualitative descriptions of six colors, including their uses and psychological associations (positive/negative). Goal: To inform and compare these attributes interactively. Viz/Presentation Method: The primary information is presented in a three-part text block (positive, negative, uses) for clarity. For comparison, a radar chart is used. This chart maps the qualitative attributes to a numerical scale (1-10) across five dimensions: শক্তি (Energy), শান্তি (Peace), বিশ্বাস (Trust), আনন্দ (Joy), এবং বিপদ (Danger). Interaction: Clicking a color in the navigation updates the text content and highlights that color's data series on the radar chart. The new color mixer uses RGB sliders for input and calls a generative AI to produce a qualitative analysis of the user-created color. Justification: This combined approach presents detailed information clearly while the radar chart offers a powerful "at-a-glance" comparison of the colors' emotional profiles, which is more engaging than text alone. The AI mixer adds a highly interactive and creative dimension. Library/Method: Chart.js (Canvas) is used for the chart. All icons and layouts are built with Tailwind CSS and HTML. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -43,6 +43,43 @@
                 height: 400px;
             }
         }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #D35400;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom styling for RGB slider thumbs */
+        input[type=range] {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: var(--thumb-color, #4F46E5); /* Fallback or specific color */
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+          margin-top: -8px; /* Vertically center the thumb */
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -55,6 +92,42 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 md:p-8">
+        <section id="color-mixer" class="mb-12 bg-white rounded-lg shadow-md p-6 md:p-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">ইন্টারেক্টিভ রঙ মিক্সার</h2>
+                <p class="mt-2 text-gray-600 max-w-3xl mx-auto">নিচের স্লাইডারগুলো ব্যবহার করে আপনার পছন্দমতো রঙ তৈরি করুন এবং কৃত্রিম বুদ্ধিমত্তার মাধ্যমে তার বিশ্লেষণ দেখুন।</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="red-slider" class="flex justify-between font-medium"><span>লাল</span><span id="red-value">128</span></label>
+                            <input id="red-slider" type="range" min="0" max="255" value="128" class="w-full h-2 bg-red-100 rounded-lg appearance-none cursor-pointer" style="--thumb-color: #EF4444;">
+                        </div>
+                        <div>
+                            <label for="green-slider" class="flex justify-between font-medium"><span>সবুজ</span><span id="green-value">128</span></label>
+                            <input id="green-slider" type="range" min="0" max="255" value="128" class="w-full h-2 bg-green-100 rounded-lg appearance-none cursor-pointer" style="--thumb-color: #22C55E;">
+                        </div>
+                        <div>
+                            <label for="blue-slider" class="flex justify-between font-medium"><span>নীল</span><span id="blue-value">128</span></label>
+                            <input id="blue-slider" type="range" min="0" max="255" value="128" class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer" style="--thumb-color: #3B82F6;">
+                        </div>
+                    </div>
+                    <button id="analyze-button" class="mt-6 w-full bg-orange-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-orange-700 transition duration-300">
+                        রঙ বিশ্লেষণ করুন
+                    </button>
+                </div>
+                <div class="flex flex-col items-center justify-center gap-4">
+                     <div id="mixed-color-preview" class="w-full h-48 rounded-lg shadow-inner border border-gray-200" style="background-color: rgb(128, 128, 128);"></div>
+                     <div id="analysis-result" class="w-full min-h-[150px] bg-gray-50 rounded-lg p-4 text-gray-700 overflow-y-auto border border-gray-200">
+                         <div id="loader" class="hidden mx-auto loader"></div>
+                         <p id="analysis-placeholder">আপনার তৈরি করা রঙের বিশ্লেষণ এখানে দেখানো হবে।</p>
+                         <div id="analysis-content"></div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
         <div class="flex flex-col md:flex-row gap-8">
             <aside class="w-full md:w-1/4">
                 <nav id="color-nav" class="bg-white rounded-lg shadow-md p-4">
@@ -90,37 +163,63 @@
     </main>
 
 <script>
+    // --- Utility Function for API Calls with Backoff ---
+    async function retryFetch(url, options, retries = 3) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    // Treat 429 (Rate Limit) as potentially recoverable
+                    if (response.status === 429 && i < retries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + (Math.random() * 1000); // Exponential backoff + jitter
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue; // Retry loop
+                    }
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                if (i === retries - 1) {
+                    throw error; // Throw after final attempt
+                }
+                // For network errors, wait and retry.
+                const delay = Math.pow(2, i) * 1000 + (Math.random() * 1000);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    // --- Color Data and UI Handlers ---
     const colorData = {
         red: {
             title: 'লাল রঙ',
             intro: 'লাল একটি শক্তিশালী এবং আবেগঘন রঙ, যা ভালোবাসা থেকে শুরু করে বিপদ পর্যন্ত বিভিন্ন অনুভূতি প্রকাশ করে।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['শক্তি', 'সাহস', 'মনোযোগ আকর্ষণ', 'ভালোবাসা', 'উদ্দীপনা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['রাগ', 'হিংসা', 'বিপদ', 'যুদ্ধ', 'অস্থিরতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>সতর্কতা ও বিপদ:</strong> ট্র্যাফিক সিগন্যালের ‘থামো’ বাতি, ফায়ার অ্যালার্ম, এবং বিপদ চিহ্ন।','<strong>ভালোবাসা ও আবেগ:</strong> গোলাপ ফুল, ভালোবাসা দিবসের কার্ড এবং রোমান্টিক আবহের প্রতীক।','<strong>গুরুত্ব আকর্ষণ:</strong> জরুরি নোটিশ বা বিশেষ ছাড়ের ঘোষণায় মনোযোগ আকর্ষণ করতে ব্যবহৃত হয়।','<strong>উৎসব:</strong> বিভিন্ন সংস্কৃতিতে উৎসব এবং সৌভাগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>সতর্কতা ও বিপদ:</strong> ট্র্যাফিক সিগন্যালের ‘থামো’ বাতি, ফায়ার অ্যালার্ম, এবং বিপদ চিহ্ন।','<strong>ভালোবাসা ও আবেগ:</strong> গোলাপ ফুল, ভালোবাসা দিবসের কার্ড এবং রোমান্টিক আবহের প্রতীক।','<strong>গুরুত্ব আকর্ষণ:</strong> জরুরি নোটিশ বা বিশেষ ছাড়ের ঘোষণায় মনোযোগ আকর্ষণ করতে ব্যবহৃত হয়।','<strong>উৎসব:</strong> বিভিন্ন সংস্কৃতিতে উৎসব এবং সৌভাগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।'] },
             chart: [9, 2, 4, 7, 10]
         },
         green: {
             title: 'সবুজ রঙ',
-            intro: 'সবুজ প্রকৃতি, প্রশান্তি এবং নিরাপত্তার প্রতীক। এটি চোখ ও মনে আরামদায়ক অনুভূতি সৃষ্টি করে।',
+            intro: 'সবুজ প্রকৃতি, প্রশান্তি এবং নিরাপত্তার প্রতীক। এটি চোখ ও মনে আরামদায়ক অনুভূতি সৃষ্টি করে।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['শান্তি', 'নিরাপত্তা', 'প্রকৃতি', 'আরোগ্য', 'স্থিতিশীলতা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['ঈর্ষা', 'অনভিজ্ঞতা', 'অলসতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>প্রকৃতি ও পরিবেশ:</strong> পরিবেশবাদী সংস্থা এবং প্রাকৃতিক পণ্যের ব্র্যান্ডিং-এ ব্যবহৃত হয়।','<strong>নিরাপত্তা ও অনুমতি:</strong> ট্র্যাফিক সিগন্যালে ‘এগিয়ে যান’ সংকেত এবং নিরাপদ স্থান চিহ্নিত করতে ব্যবহৃত হয়।','<strong>স্বাস্থ্য:</strong> হাসপাতাল, ফার্মেসি এবং স্বাস্থ্যকর পণ্যে আরোগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি:</strong> কর্মক্ষেত্র বা পড়ার ঘরে শান্ত ও মনোযোগী পরিবেশ তৈরি করতে সাহায্য করে।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>প্রকৃতি ও পরিবেশ:</strong> পরিবেশবাদী সংস্থা এবং প্রাকৃতিক পণ্যের ব্র্যান্ডিং-এ ব্যবহৃত হয়।','<strong>নিরাপত্তা ও অনুমতি:</strong> ট্র্যাফিক সিগন্যালে ‘এগিয়ে যান’ সংকেত এবং নিরাপদ স্থান চিহ্নিত করতে ব্যবহৃত হয়।','<strong>স্বাস্থ্য:</strong> হাসপাতাল, ফার্মেসি এবং স্বাস্থ্যকর পণ্যে আরোগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি:</strong> কর্মক্ষেত্র বা পড়ার ঘরে শান্ত ও মনোযোগী পরিবেশ তৈরি করতে সাহায্য করে।'] },
             chart: [4, 9, 7, 6, 2]
         },
         blue: {
             title: 'নীল রঙ',
-            intro: 'নীল বিশ্বাস, জ্ঞান এবং স্থিতিশীলতার প্রতীক। এটি কর্পোরেট জগৎ এবং প্রযুক্তিতে ব্যাপকভাবে ব্যবহৃত হয়।',
+            intro: 'নীল বিশ্বাস, জ্ঞান এবং স্থিতিশীলতার প্রতীক। এটি কর্পোরেট জগৎ এবং প্রযুক্তিতে ব্যাপকভাবে ব্যবহৃত হয়।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['জ্ঞান', 'বিশ্বাস', 'স্থিরতা', 'শান্তি', 'উৎপাদনশীলতা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['শীতলতা', 'বিচ্ছিন্নতা', 'বিষণ্ণতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিশ্বাস ও স্থিতিশীলতা:</strong> ব্যাংক, বীমা এবং কর্পোরেট প্রতিষ্ঠানে আস্থার প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি ও গভীরতা:</strong> আকাশ ও সমুদ্রের রঙ হওয়ায় এটি ধ্যান বা বিশ্রামের কক্ষে শান্তি আনে।','<strong>প্রযুক্তি:</strong> আধুনিক প্রযুক্তি, সফটওয়্যার এবং সোশ্যাল মিডিয়া প্ল্যাটফর্মে এর ব্যাপক ব্যবহার দেখা যায়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিশ্বাস ও স্থিতিশীলতা:</strong> ব্যাংক, বীমা এবং কর্পোরেট প্রতিষ্ঠানে আস্থার প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি ও গভীরতা:</strong> আকাশ ও সমুদ্রের রঙ হওয়ায় এটি ধ্যান বা বিশ্রামের কক্ষে শান্তি আনে।','<strong>প্রযুক্তি:</strong> আধুনিক প্রযুক্তি, সফটওয়্যার এবং সোশ্যাল মিডিয়া প্ল্যাটফর্মে এর ব্যাপক ব্যবহার দেখা যায়।'] },
             chart: [5, 10, 9, 3, 1]
         },
         yellow: {
             title: 'হলুদ রঙ',
-            intro: 'হলুদ রঙ আনন্দ, আশা এবং শক্তির প্রতীক। এটি অত্যন্ত উজ্জ্বল হওয়ায় সহজেই মনোযোগ আকর্ষণ করে।',
+            intro: 'হলুদ রঙ আনন্দ, আশা এবং শক্তির প্রতীক। এটি অত্যন্ত উজ্জ্বল হওয়ায় সহজেই মনোযোগ আকর্ষণ করে।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['আনন্দ', 'শক্তি', 'বুদ্ধিমত্তা', 'আশা', 'ইতিবাচকতা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['বিশ্বাসঘাতকতা', 'কাপুরুষতা', 'অস্থিরতা', 'ক্লান্তি'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>আনন্দ ও আশাবাদ:</strong> ইতিবাচক এবং বন্ধুত্বপূর্ণ অনুভূতি তৈরি করতে ব্যবহৃত হয়।','<strong>সতর্কতা:</strong> ট্র্যাফিক সিগন্যাল, নির্মাণাধীন এলাকা বা বিপদজনক স্থানে সতর্কতার জন্য ব্যবহৃত হয়।','<strong>মনোযোগ আকর্ষণ:</strong> ট্যাক্সি, স্কুল বাস এবং বিজ্ঞাপনে দৃষ্টি আকর্ষণের জন্য এটি একটি কার্যকর রঙ।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>আনন্দ ও আশাবাদ:</strong> ইতিবাচক এবং বন্ধুত্বপূর্ণ অনুভূতি তৈরি করতে ব্যবহৃত হয়।','<strong>সতর্কতা:</strong> ট্র্যাফিক সিগন্যাল, নির্মাণাধীন এলাকা বা বিপদজনক স্থানে সতর্কতার জন্য ব্যবহৃত হয়।','<strong>মনোযোগ আকর্ষণ:</strong> ট্যাক্সি, স্কুল বাস এবং বিজ্ঞাপনে দৃষ্টি আকর্ষণের জন্য এটি একটি কার্যকর রঙ।'] },
             chart: [8, 5, 3, 9, 7]
         },
         orange: {
@@ -128,7 +227,7 @@
             intro: 'কমলা রঙটি উষ্ণতা, সৃজনশীলতা এবং উৎসাহের প্রতীক। এটি হলুদ রঙের আনন্দ এবং লাল রঙের শক্তিকে একত্রিত করে।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['সৃজনশীলতা', 'উৎসাহ', 'উষ্ণতা', 'বন্ধুত্ব', 'শক্তি'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['অগভীরতা', 'অতিরিক্ততা', 'সতর্কতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>খাদ্য ও পানীয়:</strong> রেস্তোরাঁ এবং খাদ্যপণ্যের ব্র্যান্ডিং-এ ক্ষুধা উদ্রেক করতে ব্যবহৃত হয়।', '<strong>সতর্কতা:</strong> নির্মাণ কর্মী বা ট্র্যাফিক পুলিশের সেফটি ভেস্টে সহজে দৃষ্টিগোচর হওয়ার জন্য ব্যবহৃত হয়।', '<strong>ব্র্যান্ডিং:</strong> তরুণ ও উদ্যমী ব্র্যান্ডের জন্য শক্তি ও সৃজনশীলতা প্রকাশ করে।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>খাদ্য ও পানীয়:</strong> রেস্তোরাঁ এবং খাদ্যপণ্যের ব্র্যান্ডিং-এ ক্ষুধা উদ্রেক করতে ব্যবহৃত হয়।', '<strong>সতর্কতা:</strong> নির্মাণ কর্মী বা ট্র্যাফিক পুলিশের সেফটি ভেস্টে সহজে দৃষ্টিগোচর হওয়ার জন্য ব্যবহৃত হয়।', '<strong>ব্র্যান্ডিং:</strong> তরুণ ও উদ্যমী ব্র্যান্ডের জন্য শক্তি ও সৃজনশীলতা প্রকাশ করে।'] },
             chart: [8, 3, 4, 8, 6]
         },
         purple: {
@@ -136,7 +235,7 @@
             intro: 'বেগুনি রঙ ঐতিহ্যগতভাবে রাজকীয়তা, বিলাসিতা এবং আধ্যাত্মিকতার সাথে যুক্ত। এটি রহস্য এবং জ্ঞানেরও প্রতীক।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['রাজকীয়তা', 'বিলাসিতা', 'জ্ঞান', 'আধ্যাত্মিকতা', 'সৃজনশীলতা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['অহংকার', 'বিষণ্ণতা', 'অবাস্তবতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিলাসবহুল পণ্য:</strong> পারফিউম, গহনা বা উচ্চ মূল্যের পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>আধ্যাত্মিকতা:</strong> ধ্যান, যোগ বা আধ্যাত্মিক কেন্দ্রগুলিতে রহস্যময় এবং শান্ত পরিবেশ তৈরি করে।', '<strong>সৃজনশীলতা:</strong> শিল্প ও ডিজাইনে স্বতন্ত্রতা এবং কল্পনা প্রকাশ করতে ব্যবহৃত হয়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিলাসবহুল পণ্য:</strong> পারফিউম, গহনা বা উচ্চ মূল্যের পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>আধ্যাত্মিকতা:</strong> ধ্যান, যোগ বা আধ্যাত্মিক কেন্দ্রগুলিতে রহস্যময় এবং শান্ত পরিবেশ তৈরি করে।', '<strong>সৃজনশীলতা:</strong> শিল্প ও ডিজাইনে স্বতন্ত্রতা এবং কল্পনা প্রকাশ করতে ব্যবহৃত হয়।'] },
             chart: [5, 6, 6, 5, 2]
         },
         pink: {
@@ -144,15 +243,15 @@
             intro: 'গোলাপী রঙটি সাধারণত স্নেহ, মমতা এবং নারীত্বের প্রতীক হিসেবে পরিচিত। এটি একটি কোমল এবং শান্ত রঙ।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['স্নেহ', 'মমতা', 'নারীত্ব', 'কোমলতা', 'শান্তি'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['দুর্বলতা', 'অপরিণত', 'অবাস্তব'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ব্র্যান্ডিং:</strong> নারী ও শিশুতোষ পণ্য, খেলনা এবং মিষ্টির ব্র্যান্ডিং-এ বহুল ব্যবহৃত।', '<strong>ভালোবাসা:</strong> রোমান্টিক অনুভূতি এবং সহানুভূতি প্রকাশ করতে ব্যবহৃত হয়।', '<strong>সচেতনতা:</strong> স্তন ক্যান্সার সচেতনতার মতো সামাজিক প্রচারণায় প্রতীকী রঙ হিসেবে ব্যবহৃত হয়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ব্র্যান্ডিং:</strong> নারী ও শিশুতোষ পণ্য, খেলনা এবং মিষ্টির ব্র্যান্ডিং-এ বহুল ব্যবহৃত।', '<strong>ভালোবাসা:</strong> রোমান্টিক অনুভূতি এবং সহানুভূতি প্রকাশ করতে ব্যবহৃত হয়।', '<strong>সচেতনতা:</strong> স্তন ক্যান্সার সচেতনতার মতো সামাজিক প্রচারণায় প্রতীকী রঙ হিসেবে ব্যবহৃত হয়।'] },
             chart: [3, 8, 6, 8, 1]
         },
         brown: {
             title: 'বাদামী রঙ',
-            intro: 'বাদামী রঙটি মাটি, কাঠ এবং প্রকৃতির সাথে সম্পর্কিত। এটি স্থিতিশীলতা, নির্ভরতা এবং আরামের অনুভূতি দেয়।',
+            intro: 'বাদামী রঙটি মাটি, কাঠ এবং প্রকৃতির সাথে সম্পর্কিত। এটি স্থিতিশীলতা, নির্ভরতা এবং আরামের অনুভূতি দেয়।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['স্থিতিশীলতা', 'নির্ভরতা', 'আরাম', 'প্রকৃতি', 'সততা'] },
-            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['বিষণ্ণতা', 'একঘেয়েমি', 'শূন্যতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ইন্টেরিয়র ডিজাইন:</strong> আসবাবপত্র এবং বাড়ির সাজসজ্জায় উষ্ণ এবং আরামদায়ক পরিবেশ তৈরি করে।', '<strong>প্রাকৃতিক পণ্য:</strong> জৈব খাদ্য, কফি বা প্রাকৃতিক পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>ফ্যাশন:</strong> পোশাকে স্থিতিশীলতা, নির্ভরতা এবং প্রাকৃতিক অনুভূতি প্রকাশ করে।'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['বিষণ্ণতা', 'একঘেয়েমি', 'শূন্যতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ইন্টেরিয়র ডিজাইন:</strong> আসবাবপত্র এবং বাড়ির সাজসজ্জায় উষ্ণ এবং আরামদায়ক পরিবেশ তৈরি করে।', '<strong>প্রাকৃতিক পণ্য:</strong> জৈব খাদ্য, কফি বা প্রাকৃতিক পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>ফ্যাশন:</strong> পোশাকে স্থিতিশীলতা, নির্ভরতা এবং প্রাকৃতিক অনুভূতি প্রকাশ করে।'] },
             chart: [3, 7, 8, 3, 2]
         },
         black: {
@@ -160,15 +259,15 @@
             intro: 'কালো রঙ শক্তি, আভিজাত্য এবং রহস্যের প্রতীক। এটি একই সাথে শোক এবং আধুনিকতারও প্রতিনিধিত্ব করে।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['আভিজাত্য', 'ক্ষমতা', 'সুরক্ষা', 'গাম্ভীর্য', 'আধুনিকতা'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['ভয়', 'মৃত্যু', 'শোক', 'অশুভ শক্তি', 'শূন্যতা'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শক্তি ও কর্তৃত্ব:</strong> আনুষ্ঠানিক পোশাক এবং বিলাসবহুল পণ্যে ক্ষমতা ও গাম্ভীর্যের প্রতীক।','<strong>শোক ও রহস্য:</strong> বিভিন্ন সংস্কৃতিতে শোক এবং রহস্যময় পরিস্থিতি বোঝাতে ব্যবহৃত হয়।','<strong>আধুনিকতা:</strong> ফ্যাশন এবং আধুনিক ডিজাইনে রুচিশীলতা ও সরলতার প্রতীক হিসেবে জনপ্রিয়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শক্তি ও কর্তৃত্ব:</strong> আনুষ্ঠানিক পোশাক এবং বিলাসবহুল পণ্যে ক্ষমতা ও গাম্ভীর্যের প্রতীক।','<strong>শোক ও রহস্য:</strong> বিভিন্ন সংস্কৃতিতে শোক এবং রহস্যময় পরিস্থিতি বোঝাতে ব্যবহৃত হয়।','<strong>আধুনিকতা:</strong> ফ্যাশন এবং আধুনিক ডিজাইনে রুচিশীলতা ও সরলতার প্রতীক হিসেবে জনপ্রিয়।'] },
             chart: [7, 3, 6, 2, 8]
         },
         white: {
             title: 'সাদা রঙ',
-            intro: 'সাদা রঙ শান্তি, পবিত্রতা এবং সরলতার প্রতীক। এটি পরিচ্ছন্নতা এবং নতুন সূচনার অনুভূতি দেয়।',
+            intro: 'সাদা রঙ শান্তি, পবিত্রতা এবং সরলতার প্রতীক। এটি পরিচ্ছন্নতা এবং নতুন সূচনার অনুভূতি দেয়।',
             positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['পবিত্রতা', 'পরিচ্ছন্নতা', 'সরলতা', 'শান্তি', 'নতুন শুরু'] },
             negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['শূন্যতা', 'বিচ্ছিন্নতা', 'শীতলতা', 'আত্মসমর্পণ'] },
-            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শান্তি ও পবিত্রতা:</strong> শান্তির পতাকা, বিয়ের পোশাক এবং ধর্মীয় অনুষ্ঠানে বিশুদ্ধতার প্রতীক।','<strong>পরিচ্ছন্নতা:</strong> হাসপাতাল, রান্নাঘর এবং স্বাস্থ্যকর পরিবেশে পরিচ্ছন্নতার অনুভূতি দিতে ব্যবহৃত হয়।','<strong>ন্যূনতম ডিজাইন:</strong> আধুনিক ও মিনিমালিস্টিক ডিজাইনে খালি স্থান বা সরলতা বোঝাতে ব্যবহৃত হয়।'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শান্তি ও পবিত্রতা:</strong> শান্তির পতাকা, বিয়ের পোশাক এবং ধর্মীয় অনুষ্ঠানে বিশুদ্ধতার প্রতীক।','<strong>পরিচ্ছন্নতা:</strong> হাসপাতাল, রান্নাঘর এবং স্বাস্থ্যকর পরিবেশে পরিচ্ছন্নতার অনুভূতি দিতে ব্যবহৃত হয়।','<strong>ন্যূনতম ডিজাইন:</strong> আধুনিক ও মিনিমালিস্টিক ডিজাইনে খালি স্থান বা সরলতা বোঝাতে ব্যবহৃত হয়।'] },
             chart: [2, 8, 8, 5, 1]
         }
     };
@@ -176,6 +275,97 @@
     const contentPanel = document.getElementById('content-panel');
     const colorNav = document.getElementById('color-nav');
     let colorChart;
+    
+    // Color Mixer Elements
+    const redSlider = document.getElementById('red-slider');
+    const greenSlider = document.getElementById('green-slider');
+    const blueSlider = document.getElementById('blue-slider');
+    const redValueSpan = document.getElementById('red-value');
+    const greenValueSpan = document.getElementById('green-value');
+    const blueValueSpan = document.getElementById('blue-value');
+    const colorPreview = document.getElementById('mixed-color-preview');
+    const analyzeButton = document.getElementById('analyze-button');
+    const analysisResult = document.getElementById('analysis-result');
+    const loader = document.getElementById('loader');
+    const analysisPlaceholder = document.getElementById('analysis-placeholder');
+    const analysisContent = document.getElementById('analysis-content');
+
+    function updateColorPreview() {
+        const r = redSlider.value;
+        const g = greenSlider.value;
+        const b = blueSlider.value;
+        
+        redValueSpan.textContent = r;
+        greenValueSpan.textContent = g;
+        blueValueSpan.textContent = b;
+        
+        colorPreview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    }
+
+    async function analyzeColor() {
+        const r = redSlider.value;
+        const g = greenSlider.value;
+        const b = blueSlider.value;
+        
+        // Show loading state
+        loader.classList.remove('hidden');
+        analysisPlaceholder.classList.add('hidden');
+        analysisContent.innerHTML = '';
+        analyzeButton.disabled = true;
+        analyzeButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+        const systemPrompt = `You are an expert in color psychology and branding. Analyze the given RGB color and provide a concise, insightful analysis in Bengali. The analysis must be formatted using simple paragraph breaks and **bold text** for titles/headings, but do not use Markdown headings (#) or code blocks.`;
+        const userQuery = `Analyze the color RGB(${r}, ${g}, ${b}). Provide:
+1. A creative name for the color in Bengali.
+2. A brief psychological analysis (emotions, feelings).
+3. Potential positive and negative associations.
+4. Ideal use cases (e.g., branding for a specific industry, interior design).
+Format the response clearly.`;
+
+        try {
+            const apiKey = "AIzaSyB6mshXEHwm39beIGlg76FNMjkw6Qz6kxU"; // API Key is provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            // Use retryFetch for the API call
+            const response = await retryFetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (text) {
+                // Replace newlines with <br> for better HTML display
+                analysisContent.innerHTML = text.replace(/\n/g, '<br>');
+            } else {
+                analysisContent.innerHTML = '<p>দুঃখিত, মডেল থেকে কোনো টেক্সট পাওয়া যায়নি।</p>';
+            }
+
+        } catch (error) {
+            console.error('Error analyzing color:', error);
+            analysisContent.innerHTML = '<p>বিশ্লেষণ করতে ব্যর্থ হয়েছে। একটি API বা নেটওয়ার্ক ত্রুটি ঘটেছে।</p>';
+        } finally {
+            // Hide loading state
+            loader.classList.add('hidden');
+            analyzeButton.disabled = false;
+            analyzeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            if(analysisContent.innerHTML === '') {
+                analysisPlaceholder.classList.remove('hidden');
+            }
+        }
+    }
+
+    redSlider.addEventListener('input', updateColorPreview);
+    greenSlider.addEventListener('input', updateColorPreview);
+    blueSlider.addEventListener('input', updateColorPreview);
+    analyzeButton.addEventListener('click', analyzeColor);
 
     function updateContent(colorKey) {
         const data = colorData[colorKey];
@@ -229,10 +419,13 @@
                 dataset.borderWidth = 4;
                 dataset.pointRadius = 5;
                 dataset.pointBackgroundColor = dataset.borderColor;
+                dataset.hidden = false;
             } else {
                 dataset.borderWidth = 2;
                 dataset.pointRadius = 3;
                 dataset.pointBackgroundColor = dataset.backgroundColor;
+                // Optionally hide other datasets for better focus, but let's keep them transparent
+                // dataset.hidden = true; // keeping them visible but deemphasized
             }
         });
         colorChart.update();
@@ -254,28 +447,28 @@
         const labels = ['শক্তি', 'শান্তি', 'বিশ্বাস', 'আনন্দ', 'বিপদ'];
         const datasets = Object.keys(colorData).map(key => {
             const colors = {
-                red: 'rgba(239, 68, 68, 0.8)',
-                green: 'rgba(34, 197, 94, 0.8)',
-                blue: 'rgba(59, 130, 246, 0.8)',
-                yellow: 'rgba(251, 191, 36, 0.8)',
-                orange: 'rgba(249, 115, 22, 0.8)',
-                purple: 'rgba(168, 85, 247, 0.8)',
-                pink: 'rgba(236, 72, 153, 0.8)',
-                brown: 'rgba(150, 105, 82, 0.8)',
-                black: 'rgba(17, 24, 39, 0.8)',
-                white: 'rgba(209, 213, 219, 0.8)'
+                red: 'rgba(239, 68, 68, 1.0)',
+                green: 'rgba(34, 197, 94, 1.0)',
+                blue: 'rgba(59, 130, 246, 1.0)',
+                yellow: 'rgba(251, 191, 36, 1.0)',
+                orange: 'rgba(249, 115, 22, 1.0)',
+                purple: 'rgba(168, 85, 247, 1.0)',
+                pink: 'rgba(236, 72, 153, 1.0)',
+                brown: 'rgba(150, 105, 82, 1.0)',
+                black: 'rgba(17, 24, 39, 1.0)',
+                white: 'rgba(209, 213, 219, 1.0)'
             };
             const bgColors = {
-                red: 'rgba(239, 68, 68, 0.2)',
-                green: 'rgba(34, 197, 94, 0.2)',
-                blue: 'rgba(59, 130, 246, 0.2)',
-                yellow: 'rgba(251, 191, 36, 0.2)',
-                orange: 'rgba(249, 115, 22, 0.2)',
-                purple: 'rgba(168, 85, 247, 0.2)',
-                pink: 'rgba(236, 72, 153, 0.2)',
-                brown: 'rgba(150, 105, 82, 0.2)',
-                black: 'rgba(17, 24, 39, 0.2)',
-                white: 'rgba(209, 213, 219, 0.2)'
+                red: 'rgba(239, 68, 68, 0.1)',
+                green: 'rgba(34, 197, 94, 0.1)',
+                blue: 'rgba(59, 130, 246, 0.1)',
+                yellow: 'rgba(251, 191, 36, 0.1)',
+                orange: 'rgba(249, 115, 22, 0.1)',
+                purple: 'rgba(168, 85, 247, 0.1)',
+                pink: 'rgba(236, 72, 153, 0.1)',
+                brown: 'rgba(150, 105, 82, 0.1)',
+                black: 'rgba(17, 24, 39, 0.1)',
+                white: 'rgba(209, 213, 219, 0.1)'
             };
             return {
                 label: colorData[key].title,
@@ -285,6 +478,8 @@
                 borderWidth: 2,
                 pointRadius: 3,
                 pointHoverRadius: 6,
+                fill: true,
+                tension: 0.1,
             };
         });
 
@@ -329,27 +524,33 @@
                                 size: 12,
                                 family: "'Hind Siliguri', sans-serif"
                             },
+                            color: '#403A3A',
                             usePointStyle: true,
+                            boxWidth: 8
                         }
                     },
                     tooltip: {
-                        titleFont: { family: "'Hind Siliguri', sans-serif" },
-                        bodyFont: { family: "'Hind Siliguri', sans-serif" },
+                        bodyFont: {
+                            family: "'Hind Siliguri', sans-serif"
+                        },
+                        titleFont: {
+                            family: "'Hind Siliguri', sans-serif"
+                        }
                     }
                 }
             }
         });
     }
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        const initialColor = 'red';
-        updateContent(initialColor);
-        updateActiveNav(initialColor);
-        initializeChart();
-        updateChartHighlight(initialColor);
-    });
 
+    // --- Initial Page Load ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const defaultColor = 'red';
+        updateContent(defaultColor);
+        updateActiveNav(defaultColor);
+        initializeChart();
+        updateChartHighlight(defaultColor);
+        updateColorPreview(); // Initialize color mixer preview
+    });
 </script>
 </body>
 </html>
-
