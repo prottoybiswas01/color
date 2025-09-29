@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>রঙের জগৎ: ইন্টারেক্টিভ বিশ্লেষণ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application uses a side-navigation layout. Users can select a color from the left sidebar, and the main content area dynamically updates to show detailed information about that color. This includes its positive aspects, negative aspects, and common uses. Below this, a comparative radar chart visualizes the psychological impact of all colors simultaneously, highlighting the currently selected one. This structure was chosen to allow users to focus on one color at a time while still providing a quick, visual comparison across all colors, enhancing comprehension and making exploration intuitive rather than a simple linear scroll. -->
+    <!-- Visualization & Content Choices: Report Info: The source provides qualitative descriptions of six colors, including their uses and psychological associations (positive/negative). Goal: To inform and compare these attributes interactively. Viz/Presentation Method: The primary information is presented in a three-part text block (positive, negative, uses) for clarity. For comparison, a radar chart is used. This chart maps the qualitative attributes to a numerical scale (1-10) across five dimensions: শক্তি (Energy), শান্তি (Peace), বিশ্বাস (Trust), আনন্দ (Joy), and বিপদ (Danger). Interaction: Clicking a color in the navigation updates the text content and highlights that color's data series on the radar chart. Justification: This combined approach presents detailed information clearly while the radar chart offers a powerful "at-a-glance" comparison of the colors' emotional profiles, which is more engaging than text alone. Library/Method: Chart.js (Canvas) is used for the chart. All icons and layouts are built with Tailwind CSS and HTML. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: #FDFBF8;
+            color: #403A3A;
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+            border-right: 4px solid transparent;
+        }
+        .nav-item.active {
+            background-color: #F3EFEA;
+            border-right-color: #D35400;
+            color: #D35400;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 450px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800">রঙের জগৎ: একটি ইন্টারেক্টিভ বিশ্লেষণ</h1>
+            <p class="text-center text-gray-600 mt-1">প্রতিটি রঙের পেছনের অর্থ ও ব্যবহার আবিষ্কার করুন।</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        <div class="flex flex-col md:flex-row gap-8">
+            <aside class="w-full md:w-1/4">
+                <nav id="color-nav" class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-semibold text-lg mb-3 px-2">একটি রঙ নির্বাচন করুন</h3>
+                    <ul class="space-y-1">
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="red"><span class="w-5 h-5 rounded-full bg-red-500"></span> লাল</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="green"><span class="w-5 h-5 rounded-full bg-green-500"></span> সবুজ</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="blue"><span class="w-5 h-5 rounded-full bg-blue-500"></span> নীল</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="yellow"><span class="w-5 h-5 rounded-full bg-yellow-400"></span> হলুদ</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="orange"><span class="w-5 h-5 rounded-full bg-orange-500"></span> কমলা</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="purple"><span class="w-5 h-5 rounded-full bg-purple-500"></span> বেগুনি</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="pink"><span class="w-5 h-5 rounded-full bg-pink-500"></span> গোলাপী</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="brown"><span class="w-5 h-5 rounded-full" style="background-color: #966952"></span> বাদামী</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="black"><span class="w-5 h-5 rounded-full bg-black"></span> কালো</a></li>
+                        <li><a href="#" class="nav-item flex items-center gap-3 w-full px-4 py-3 rounded-md text-left" data-color="white"><span class="w-5 h-5 rounded-full bg-gray-200 border"></span> সাদা</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <section id="content-panel" class="w-full md:w-3/4 bg-white rounded-lg shadow-md p-6 md:p-8 min-h-[400px]">
+            </section>
+        </div>
+        
+        <section class="mt-12 bg-white rounded-lg shadow-md p-6 md:p-8">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-800">রঙের মনস্তাত্ত্বিক তুলনা</h2>
+                <p class="mt-2 text-gray-600 max-w-3xl mx-auto">এই তুলনামূলক চার্টটি বিভিন্ন মানসিক মাত্রার উপর ভিত্তি করে প্রতিটি রঙের প্রভাব প্রদর্শন করে। বাম পাশের মেনু থেকে কোনো রঙ নির্বাচন করলে চার্টে সেটি বিশেষভাবে হাইলাইট হবে। এটি আপনাকে এক নজরে রঙগুলোর মধ্যেকার শক্তি ও দুর্বলতা বুঝতে সাহায্য করবে।</p>
+            </div>
+            <div class="mt-8 chart-container">
+                <canvas id="colorChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+<script>
+    const colorData = {
+        red: {
+            title: 'লাল রঙ',
+            intro: 'লাল একটি শক্তিশালী এবং আবেগঘন রঙ, যা ভালোবাসা থেকে শুরু করে বিপদ পর্যন্ত বিভিন্ন অনুভূতি প্রকাশ করে।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['শক্তি', 'সাহস', 'মনোযোগ আকর্ষণ', 'ভালোবাসা', 'উদ্দীপনা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['রাগ', 'হিংসা', 'বিপদ', 'যুদ্ধ', 'অস্থিরতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>সতর্কতা ও বিপদ:</strong> ট্র্যাফিক সিগন্যালের ‘থামো’ বাতি, ফায়ার অ্যালার্ম, এবং বিপদ চিহ্ন।','<strong>ভালোবাসা ও আবেগ:</strong> গোলাপ ফুল, ভালোবাসা দিবসের কার্ড এবং রোমান্টিক আবহের প্রতীক।','<strong>গুরুত্ব আকর্ষণ:</strong> জরুরি নোটিশ বা বিশেষ ছাড়ের ঘোষণায় মনোযোগ আকর্ষণ করতে ব্যবহৃত হয়।','<strong>উৎসব:</strong> বিভিন্ন সংস্কৃতিতে উৎসব এবং সৌভাগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।'] },
+            chart: [9, 2, 4, 7, 10]
+        },
+        green: {
+            title: 'সবুজ রঙ',
+            intro: 'সবুজ প্রকৃতি, প্রশান্তি এবং নিরাপত্তার প্রতীক। এটি চোখ ও মনে আরামদায়ক অনুভূতি সৃষ্টি করে।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['শান্তি', 'নিরাপত্তা', 'প্রকৃতি', 'আরোগ্য', 'স্থিতিশীলতা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['ঈর্ষা', 'অনভিজ্ঞতা', 'অলসতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>প্রকৃতি ও পরিবেশ:</strong> পরিবেশবাদী সংস্থা এবং প্রাকৃতিক পণ্যের ব্র্যান্ডিং-এ ব্যবহৃত হয়।','<strong>নিরাপত্তা ও অনুমতি:</strong> ট্র্যাফিক সিগন্যালে ‘এগিয়ে যান’ সংকেত এবং নিরাপদ স্থান চিহ্নিত করতে ব্যবহৃত হয়।','<strong>স্বাস্থ্য:</strong> হাসপাতাল, ফার্মেসি এবং স্বাস্থ্যকর পণ্যে আরোগ্যের প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি:</strong> কর্মক্ষেত্র বা পড়ার ঘরে শান্ত ও মনোযোগী পরিবেশ তৈরি করতে সাহায্য করে।'] },
+            chart: [4, 9, 7, 6, 2]
+        },
+        blue: {
+            title: 'নীল রঙ',
+            intro: 'নীল বিশ্বাস, জ্ঞান এবং স্থিতিশীলতার প্রতীক। এটি কর্পোরেট জগৎ এবং প্রযুক্তিতে ব্যাপকভাবে ব্যবহৃত হয়।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['জ্ঞান', 'বিশ্বাস', 'স্থিরতা', 'শান্তি', 'উৎপাদনশীলতা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['শীতলতা', 'বিচ্ছিন্নতা', 'বিষণ্ণতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিশ্বাস ও স্থিতিশীলতা:</strong> ব্যাংক, বীমা এবং কর্পোরেট প্রতিষ্ঠানে আস্থার প্রতীক হিসেবে ব্যবহৃত হয়।','<strong>শান্তি ও গভীরতা:</strong> আকাশ ও সমুদ্রের রঙ হওয়ায় এটি ধ্যান বা বিশ্রামের কক্ষে শান্তি আনে।','<strong>প্রযুক্তি:</strong> আধুনিক প্রযুক্তি, সফটওয়্যার এবং সোশ্যাল মিডিয়া প্ল্যাটফর্মে এর ব্যাপক ব্যবহার দেখা যায়।'] },
+            chart: [5, 10, 9, 3, 1]
+        },
+        yellow: {
+            title: 'হলুদ রঙ',
+            intro: 'হলুদ রঙ আনন্দ, আশা এবং শক্তির প্রতীক। এটি অত্যন্ত উজ্জ্বল হওয়ায় সহজেই মনোযোগ আকর্ষণ করে।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['আনন্দ', 'শক্তি', 'বুদ্ধিমত্তা', 'আশা', 'ইতিবাচকতা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['বিশ্বাসঘাতকতা', 'কাপুরুষতা', 'অস্থিরতা', 'ক্লান্তি'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>আনন্দ ও আশাবাদ:</strong> ইতিবাচক এবং বন্ধুত্বপূর্ণ অনুভূতি তৈরি করতে ব্যবহৃত হয়।','<strong>সতর্কতা:</strong> ট্র্যাফিক সিগন্যাল, নির্মাণাধীন এলাকা বা বিপদজনক স্থানে সতর্কতার জন্য ব্যবহৃত হয়।','<strong>মনোযোগ আকর্ষণ:</strong> ট্যাক্সি, স্কুল বাস এবং বিজ্ঞাপনে দৃষ্টি আকর্ষণের জন্য এটি একটি কার্যকর রঙ।'] },
+            chart: [8, 5, 3, 9, 7]
+        },
+        orange: {
+            title: 'কমলা রঙ',
+            intro: 'কমলা রঙটি উষ্ণতা, সৃজনশীলতা এবং উৎসাহের প্রতীক। এটি হলুদ রঙের আনন্দ এবং লাল রঙের শক্তিকে একত্রিত করে।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['সৃজনশীলতা', 'উৎসাহ', 'উষ্ণতা', 'বন্ধুত্ব', 'শক্তি'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['অগভীরতা', 'অতিরিক্ততা', 'সতর্কতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>খাদ্য ও পানীয়:</strong> রেস্তোরাঁ এবং খাদ্যপণ্যের ব্র্যান্ডিং-এ ক্ষুধা উদ্রেক করতে ব্যবহৃত হয়।', '<strong>সতর্কতা:</strong> নির্মাণ কর্মী বা ট্র্যাফিক পুলিশের সেফটি ভেস্টে সহজে দৃষ্টিগোচর হওয়ার জন্য ব্যবহৃত হয়।', '<strong>ব্র্যান্ডিং:</strong> তরুণ ও উদ্যমী ব্র্যান্ডের জন্য শক্তি ও সৃজনশীলতা প্রকাশ করে।'] },
+            chart: [8, 3, 4, 8, 6]
+        },
+        purple: {
+            title: 'বেগুনি রঙ',
+            intro: 'বেগুনি রঙ ঐতিহ্যগতভাবে রাজকীয়তা, বিলাসিতা এবং আধ্যাত্মিকতার সাথে যুক্ত। এটি রহস্য এবং জ্ঞানেরও প্রতীক।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['রাজকীয়তা', 'বিলাসিতা', 'জ্ঞান', 'আধ্যাত্মিকতা', 'সৃজনশীলতা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['অহংকার', 'বিষণ্ণতা', 'অবাস্তবতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>বিলাসবহুল পণ্য:</strong> পারফিউম, গহনা বা উচ্চ মূল্যের পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>আধ্যাত্মিকতা:</strong> ধ্যান, যোগ বা আধ্যাত্মিক কেন্দ্রগুলিতে রহস্যময় এবং শান্ত পরিবেশ তৈরি করে।', '<strong>সৃজনশীলতা:</strong> শিল্প ও ডিজাইনে স্বতন্ত্রতা এবং কল্পনা প্রকাশ করতে ব্যবহৃত হয়।'] },
+            chart: [5, 6, 6, 5, 2]
+        },
+        pink: {
+            title: 'গোলাপী রঙ',
+            intro: 'গোলাপী রঙটি সাধারণত স্নেহ, মমতা এবং নারীত্বের প্রতীক হিসেবে পরিচিত। এটি একটি কোমল এবং শান্ত রঙ।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['স্নেহ', 'মমতা', 'নারীত্ব', 'কোমলতা', 'শান্তি'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['দুর্বলতা', 'অপরিণত', 'অবাস্তব'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ব্র্যান্ডিং:</strong> নারী ও শিশুতোষ পণ্য, খেলনা এবং মিষ্টির ব্র্যান্ডিং-এ বহুল ব্যবহৃত।', '<strong>ভালোবাসা:</strong> রোমান্টিক অনুভূতি এবং সহানুভূতি প্রকাশ করতে ব্যবহৃত হয়।', '<strong>সচেতনতা:</strong> স্তন ক্যান্সার সচেতনতার মতো সামাজিক প্রচারণায় প্রতীকী রঙ হিসেবে ব্যবহৃত হয়।'] },
+            chart: [3, 8, 6, 8, 1]
+        },
+        brown: {
+            title: 'বাদামী রঙ',
+            intro: 'বাদামী রঙটি মাটি, কাঠ এবং প্রকৃতির সাথে সম্পর্কিত। এটি স্থিতিশীলতা, নির্ভরতা এবং আরামের অনুভূতি দেয়।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['স্থিতিশীলতা', 'নির্ভরতা', 'আরাম', 'প্রকৃতি', 'সততা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['বিষণ্ণতা', 'একঘেয়েমি', 'শূন্যতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>ইন্টেরিয়র ডিজাইন:</strong> আসবাবপত্র এবং বাড়ির সাজসজ্জায় উষ্ণ এবং আরামদায়ক পরিবেশ তৈরি করে।', '<strong>প্রাকৃতিক পণ্য:</strong> জৈব খাদ্য, কফি বা প্রাকৃতিক পণ্যের প্যাকেজিং-এ ব্যবহৃত হয়।', '<strong>ফ্যাশন:</strong> পোশাকে স্থিতিশীলতা, নির্ভরতা এবং প্রাকৃতিক অনুভূতি প্রকাশ করে।'] },
+            chart: [3, 7, 8, 3, 2]
+        },
+        black: {
+            title: 'কালো রঙ',
+            intro: 'কালো রঙ শক্তি, আভিজাত্য এবং রহস্যের প্রতীক। এটি একই সাথে শোক এবং আধুনিকতারও প্রতিনিধিত্ব করে।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['আভিজাত্য', 'ক্ষমতা', 'সুরক্ষা', 'গাম্ভীর্য', 'আধুনিকতা'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['ভয়', 'মৃত্যু', 'শোক', 'অশুভ শক্তি', 'শূন্যতা'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শক্তি ও কর্তৃত্ব:</strong> আনুষ্ঠানিক পোশাক এবং বিলাসবহুল পণ্যে ক্ষমতা ও গাম্ভীর্যের প্রতীক।','<strong>শোক ও রহস্য:</strong> বিভিন্ন সংস্কৃতিতে শোক এবং রহস্যময় পরিস্থিতি বোঝাতে ব্যবহৃত হয়।','<strong>আধুনিকতা:</strong> ফ্যাশন এবং আধুনিক ডিজাইনে রুচিশীলতা ও সরলতার প্রতীক হিসেবে জনপ্রিয়।'] },
+            chart: [7, 3, 6, 2, 8]
+        },
+        white: {
+            title: 'সাদা রঙ',
+            intro: 'সাদা রঙ শান্তি, পবিত্রতা এবং সরলতার প্রতীক। এটি পরিচ্ছন্নতা এবং নতুন সূচনার অনুভূতি দেয়।',
+            positive: { title: 'ইতিবাচক দিক', icon: '✔', points: ['পবিত্রতা', 'পরিচ্ছন্নতা', 'সরলতা', 'শান্তি', 'নতুন শুরু'] },
+            negative: { title: 'বিপদ বা নেতিবাচক দিক', icon: '❗', points: ['শূন্যতা', 'বিচ্ছিন্নতা', 'শীতলতা', 'আত্মসমর্পণ'] },
+            usage: { title: 'কাজ ও ব্যবহার', points: ['<strong>শান্তি ও পবিত্রতা:</strong> শান্তির পতাকা, বিয়ের পোশাক এবং ধর্মীয় অনুষ্ঠানে বিশুদ্ধতার প্রতীক।','<strong>পরিচ্ছন্নতা:</strong> হাসপাতাল, রান্নাঘর এবং স্বাস্থ্যকর পরিবেশে পরিচ্ছন্নতার অনুভূতি দিতে ব্যবহৃত হয়।','<strong>ন্যূনতম ডিজাইন:</strong> আধুনিক ও মিনিমালিস্টিক ডিজাইনে খালি স্থান বা সরলতা বোঝাতে ব্যবহৃত হয়।'] },
+            chart: [2, 8, 8, 5, 1]
+        }
+    };
+
+    const contentPanel = document.getElementById('content-panel');
+    const colorNav = document.getElementById('color-nav');
+    let colorChart;
+
+    function updateContent(colorKey) {
+        const data = colorData[colorKey];
+        if (!data) return;
+
+        contentPanel.innerHTML = `
+            <div class="animate-fade-in">
+                <h2 class="text-3xl font-bold text-gray-800">${data.title}</h2>
+                <p class="mt-2 text-lg text-gray-600">${data.intro}</p>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-green-50/50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                        <h3 class="font-semibold text-xl text-green-800 flex items-center gap-2"><span>${data.positive.icon}</span> ${data.positive.title}</h3>
+                        <ul class="mt-2 list-disc list-inside text-gray-700 space-y-1">
+                            ${data.positive.points.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="bg-red-50/50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                        <h3 class="font-semibold text-xl text-red-800 flex items-center gap-2"><span>${data.negative.icon}</span> ${data.negative.title}</h3>
+                        <ul class="mt-2 list-disc list-inside text-gray-700 space-y-1">
+                            ${data.negative.points.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <h3 class="font-semibold text-2xl text-gray-800">${data.usage.title}</h3>
+                    <ul class="mt-4 space-y-3 text-gray-700">
+                        ${data.usage.points.map(p => `<li class="flex items-start gap-3"><span class="mt-1.5 w-2 h-2 rounded-full bg-gray-400 shrink-0"></span><span>${p}</span></li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    function updateActiveNav(colorKey) {
+        document.querySelectorAll('#color-nav .nav-item').forEach(item => {
+            if (item.dataset.color === colorKey) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+    
+    function updateChartHighlight(colorKey) {
+        if (!colorChart) return;
+        const colorKeys = Object.keys(colorData);
+        const selectedIndex = colorKeys.indexOf(colorKey);
+        
+        colorChart.data.datasets.forEach((dataset, index) => {
+            if (index === selectedIndex) {
+                dataset.borderWidth = 4;
+                dataset.pointRadius = 5;
+                dataset.pointBackgroundColor = dataset.borderColor;
+            } else {
+                dataset.borderWidth = 2;
+                dataset.pointRadius = 3;
+                dataset.pointBackgroundColor = dataset.backgroundColor;
+            }
+        });
+        colorChart.update();
+    }
+
+    colorNav.addEventListener('click', function(e) {
+        e.preventDefault();
+        const navLink = e.target.closest('.nav-item');
+        if (navLink) {
+            const colorKey = navLink.dataset.color;
+            updateContent(colorKey);
+            updateActiveNav(colorKey);
+            updateChartHighlight(colorKey);
+        }
+    });
+
+    function initializeChart() {
+        const ctx = document.getElementById('colorChart').getContext('2d');
+        const labels = ['শক্তি', 'শান্তি', 'বিশ্বাস', 'আনন্দ', 'বিপদ'];
+        const datasets = Object.keys(colorData).map(key => {
+            const colors = {
+                red: 'rgba(239, 68, 68, 0.8)',
+                green: 'rgba(34, 197, 94, 0.8)',
+                blue: 'rgba(59, 130, 246, 0.8)',
+                yellow: 'rgba(251, 191, 36, 0.8)',
+                orange: 'rgba(249, 115, 22, 0.8)',
+                purple: 'rgba(168, 85, 247, 0.8)',
+                pink: 'rgba(236, 72, 153, 0.8)',
+                brown: 'rgba(150, 105, 82, 0.8)',
+                black: 'rgba(17, 24, 39, 0.8)',
+                white: 'rgba(209, 213, 219, 0.8)'
+            };
+            const bgColors = {
+                red: 'rgba(239, 68, 68, 0.2)',
+                green: 'rgba(34, 197, 94, 0.2)',
+                blue: 'rgba(59, 130, 246, 0.2)',
+                yellow: 'rgba(251, 191, 36, 0.2)',
+                orange: 'rgba(249, 115, 22, 0.2)',
+                purple: 'rgba(168, 85, 247, 0.2)',
+                pink: 'rgba(236, 72, 153, 0.2)',
+                brown: 'rgba(150, 105, 82, 0.2)',
+                black: 'rgba(17, 24, 39, 0.2)',
+                white: 'rgba(209, 213, 219, 0.2)'
+            };
+            return {
+                label: colorData[key].title,
+                data: colorData[key].chart,
+                borderColor: colors[key],
+                backgroundColor: bgColors[key],
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+            };
+        });
+
+        colorChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 14,
+                                family: "'Hind Siliguri', sans-serif"
+                            },
+                            color: '#374151'
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            max: 10,
+                            stepSize: 2,
+                            backdropColor: 'rgba(255, 255, 255, 0.75)',
+                            color: '#6b7280'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12,
+                                family: "'Hind Siliguri', sans-serif"
+                            },
+                            usePointStyle: true,
+                        }
+                    },
+                    tooltip: {
+                        titleFont: { family: "'Hind Siliguri', sans-serif" },
+                        bodyFont: { family: "'Hind Siliguri', sans-serif" },
+                    }
+                }
+            }
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const initialColor = 'red';
+        updateContent(initialColor);
+        updateActiveNav(initialColor);
+        initializeChart();
+        updateChartHighlight(initialColor);
+    });
+
+</script>
+</body>
+</html>
+
